@@ -1,15 +1,16 @@
 # BCP Calculator
 
-A tool for calculating Business Complexity Points (BCP) of user stories using LangChain with support for multiple LLM providers (OpenAI GPT-4o-2024-05-13 and Anthropic Claude).
+Calculate **Business Complexity Points (BCP)** for user stories with LangChain and multiple LLM providers. Stories can come from **local files** or **Trello** (and the same adapter interface is ready for Jira or Azure DevOps later). When the source is Trello, results are written back as a **card comment** by default; custom fields are optional.
 
 ## Overview
 
-The BCP Calculator analyzes user stories and calculates their Business Complexity Points based on:
+The BCP Calculator analyzes a user story and scores it on:
 - Business Rules Complexity
 - Interface Elements Complexity
 - Boundaries Complexity
 
-The application orchestrates a flow through 6 predefined prompt steps:
+Stories are loaded through a [pluggable source adapter](docs/usage/story_sources.md). The calculator only ever sees markdown (`Story.content`), so a new tracker does not change the 6-step prompt flow:
+
 1. Story Maturity Complexity (complementary analysis)
 2. Story INVEST Maturity (complementary analysis)
 3. Break Elements (separates the story into Business Rules, Interface Elements, and Boundaries)
@@ -21,7 +22,7 @@ The application orchestrates a flow through 6 predefined prompt steps:
 
 1. Clone this repository:
    ```
-   git clone <repository-url>
+   git clone https://github.com/davieira/bcp-agent.git
    cd bcp-agent
    ```
 
@@ -35,7 +36,9 @@ The application orchestrates a flow through 6 predefined prompt steps:
    cp .env.example .env
    ```
    
-   Then edit the `.env` file to add your API keys for the providers you want to use (OpenAI and/or Anthropic).
+   Then edit the `.env` file:
+   - LLM keys and **model name** for the provider you use (`OPENAI_MODEL_NAME` or `ANTHROPIC_MODEL_NAME` are required)
+   - `TRELLO_API_KEY` and `TRELLO_TOKEN` if you load stories from Trello (token needs `read,write` to comment on cards)
 
 ## LLM Providers
 
@@ -153,6 +156,39 @@ python run_cli.py story.md --provider flow-bedrock
 
 ---
 
+## Story input sources
+
+| Source | How to select | Single story | Collection | Write-back |
+|---|---|---|---|---|
+| File | `--source file` (default) | markdown path | directory | none |
+| Trello | `--source trello` or `--trello-board` / `--trello-list` | card id or URL | list or board | comment (default); custom fields with `--trello-custom-fields` |
+
+Trello write-back **does not change the card description**. Scores go to a markdown comment. `--trello-custom-fields` creates/updates `BCP`, `Maturidade`, and `INVEST` on the board (needs a Trello plan that includes Custom Fields). Use `--no-write-back` to only print JSON.
+
+```bash
+# File
+python run_cli.py path/to/user_story.md
+
+# Trello card — comment with total BCP, components, maturity, INVEST
+python run_cli.py --source trello --id https://trello.com/c/abc123
+
+# Every open card in a list or board
+python run_cli.py --trello-list LIST_ID
+python run_cli.py --trello-board https://trello.com/b/shortLink --trello-list-name "Ready"
+
+# Optional: also write numeric custom fields (Premium)
+python run_cli.py --trello-board https://trello.com/b/shortLink --trello-custom-fields
+```
+
+Trello `.env`:
+
+```env
+TRELLO_API_KEY=your_trello_api_key_here
+TRELLO_TOKEN=your_trello_token_here
+```
+
+Full contract (CLI, HTTP `POST /calculate/source`, SDK, MCP) and how to add Jira/Azure DevOps: [Story Input Sources](docs/usage/story_sources.md).
+
 ## Integration Options
 
 The BCP Calculator can be used in five different ways:
@@ -167,31 +203,22 @@ Choose the integration option that best fits your workflow. Click the links abov
 
 ## Basic CLI Usage
 
-Run the BCP Calculator with a user story file:
-
-```
-python run_cli.py path/to/user_story.md
-```
-
-Or load the story from Trello (see [Story Input Sources](docs/usage/story_sources.md)):
-
-```
-python run_cli.py --source trello --id https://trello.com/c/abc123
-python run_cli.py --trello-board https://trello.com/b/shortLink --trello-list-name "Ready"
-```
+See [Story input sources](#story-input-sources) above for file and Trello examples.
 
 ### Options
 
 - `--source`: Story input source (`file` or `trello`). Default is `file`.
 - `--id`: Story identifier in the selected source (file path, Trello card URL, ...).
 - `--container` / `--container-type`: Collection to load (board, list, directory, ...).
+- `--trello-board` / `--trello-list` / `--trello-list-name` / `--trello-label`: Trello shortcuts (imply `--source trello`).
+- `--trello-custom-fields`: Create/update Trello custom fields `BCP`, `Maturidade`, `INVEST` (off by default; comment only).
+- `--no-write-back`: Do not comment on Trello cards.
 - `--log-level`: Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default is INFO.
 - `--output-file`: Path to save the output results. If not provided, results are printed to stdout.
 - `--provider`: LLM provider to use (openai, claude, flow-openai or flow-bedrock). Default is openai.
 - `--format`: Output format (text or json). Default is json.
 
 For more detailed CLI usage information, see the [CLI Usage Guide](docs/usage/cli_usage.md).
-To add Jira, Azure DevOps, or another tracker, see [Story Input Sources](docs/usage/story_sources.md).
 
 ## Output
 
@@ -240,7 +267,7 @@ The output includes:
 ### Core Application Files
 - `run_cli.py`: Entry point wrapper for the CLI application
 - `run_api_server.py`: HTTP API server launcher
-- `run_mcp_server.py`: MCP server launcher (stdio)
+- `run_mcp.py`: MCP server launcher (stdio)
 - `run_mcp_http_server.py`: MCP server launcher (HTTP)
 - `run_comparison.py`: Tool for comparing BCP results between different providers
 - `src/main.py`: Main CLI implementation
@@ -267,6 +294,7 @@ The output includes:
   - `http_api_usage.md`: HTTP API usage guide
   - `mcp_usage.md`: MCP usage guide
   - `sdk_usage.md`: SDK usage guide
+  - `story_sources.md`: File/Trello adapters and how to add a new source
 - `README.md`: Project documentation
 - `LICENSE`: License information
 
