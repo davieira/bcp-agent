@@ -5,13 +5,13 @@ This module provides a Python client for the BCP Calculator.
 """
 
 from typing import Dict, Any, Optional, Union, List
-import os
 import logging
 from pathlib import Path
 import json
 from dotenv import load_dotenv
 
 from bcp import BCPCalculator, setup_logger
+from bcp.sources import SourceQuery, StoryInputService
 
 
 class BCPClient:
@@ -46,7 +46,47 @@ class BCPClient:
             A dictionary containing the BCP calculation results
         """
         return self.calculator.calculate_bcp(story_content)
-        
+
+    def calculate_from_source(
+        self,
+        source: str,
+        item: Optional[str] = None,
+        container: Optional[str] = None,
+        container_type: Optional[str] = None,
+        filters: Optional[Dict[str, Any]] = None,
+        **source_kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Calculate BCP from a registered story source (file, trello, ...).
+
+        Args:
+            source: Source name registered in ``bcp.sources``
+            item: Single story identifier (file path, Trello card URL, issue key, ...)
+            container: Collection identifier (directory, board, list, project, ...)
+            container_type: Disambiguates container (board, list, directory, ...)
+            filters: Source-specific filters
+            **source_kwargs: Passed to the source constructor (e.g. api_key, token,
+                write_back, write_custom_fields)
+
+        Returns:
+            Calculator results for one story, or a batch payload for many stories
+        """
+        service = StoryInputService(logger=self.logger)
+        query = SourceQuery(
+            item=item,
+            container=container,
+            container_type=container_type,
+            filters=filters or {},
+        )
+        write_back = bool(source_kwargs.pop("write_back", True))
+        return service.process(
+            source,
+            query,
+            self.calculator,
+            write_back=write_back,
+            **source_kwargs,
+        )
+
     def calculate_file(self, file_path: Union[str, Path]) -> Dict[str, Any]:
         """
         Calculate BCP for a user story file.

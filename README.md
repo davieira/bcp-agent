@@ -37,6 +37,122 @@ The application orchestrates a flow through 6 predefined prompt steps:
    
    Then edit the `.env` file to add your API keys for the providers you want to use (OpenAI and/or Anthropic).
 
+## LLM Providers
+
+The BCP Calculator supports four LLM providers, selected via the `--provider` flag. Each requires its own set of environment variables in your `.env` file.
+
+---
+
+### OpenAI (`--provider openai`)
+
+Connects directly to the OpenAI API using `langchain-openai`.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENAI_API_KEY` | Yes | — | Your OpenAI API key |
+| `OPENAI_MODEL_NAME` | Yes | — | Model to use (set in `.env`, e.g. `gpt-4o-mini`) |
+
+**.env example:**
+```env
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL_NAME=gpt-4o-mini
+```
+
+**Usage:**
+```bash
+python run_cli.py story.md --provider openai
+```
+
+---
+
+### Anthropic Claude (`--provider claude`)
+
+Connects directly to the Anthropic API using `langchain-anthropic`.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | — | Your Anthropic API key |
+| `ANTHROPIC_MODEL_NAME` | Yes | — | Model to use (set in `.env`) |
+
+**.env example:**
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL_NAME=claude-3-sonnet-20240229-v1:0
+```
+
+**Usage:**
+```bash
+python run_cli.py story.md --provider claude
+```
+
+---
+
+### Flow OpenAI (`--provider flow-openai`)
+
+Routes requests through [CI&T Flow](https://flow.ciandt.com)'s OpenAI-compatible orchestration layer. Authenticates via client credentials (exchanged for a Bearer token automatically).
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `FLOW_BASE_URL` | Yes | — | Flow base URL (e.g. `https://flow.ciandt.com`) |
+| `FLOW_CLIENT_ID` | Yes | — | Flow API client ID |
+| `FLOW_CLIENT_SECRET` | Yes | — | Flow API client secret |
+| `FLOW_TENANT` | No | `flowteam` | Tenant identifier sent in the `FlowTenant` header |
+| `FLOW_AGENT` | No | `bcp-opensource` | Agent identifier sent in the `FlowAgent` header |
+| `FLOW_MODEL_NAME` | No | `gpt-4o-mini` | Model to use (OpenAI-compatible names) |
+| `FLOW_MAX_TOKENS` | No | `4096` | Maximum tokens to generate |
+
+**.env example:**
+```env
+FLOW_BASE_URL=https://flow.ciandt.com
+FLOW_CLIENT_ID=my-client-id
+FLOW_CLIENT_SECRET=my-client-secret
+FLOW_TENANT=myteam
+FLOW_AGENT=bcp-opensource
+FLOW_MODEL_NAME=gpt-4o-mini
+```
+
+**Usage:**
+```bash
+python run_cli.py story.md --provider flow-openai
+```
+
+---
+
+### Flow Bedrock (`--provider flow-bedrock`)
+
+Routes requests through CI&T Flow's Bedrock endpoint, which provides access to AWS Bedrock models (including Claude via Bedrock). Uses the same client credentials authentication as `flow-openai`.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `FLOW_BASE_URL` | Yes | — | Flow base URL (e.g. `https://flow.ciandt.com`) |
+| `FLOW_CLIENT_ID` | Yes | — | Flow API client ID |
+| `FLOW_CLIENT_SECRET` | Yes | — | Flow API client secret |
+| `FLOW_TENANT` | No | `flowteam` | Tenant identifier sent in the `FlowTenant` header |
+| `FLOW_AGENT` | No | `bcp-opensource` | Agent identifier sent in the `FlowAgent` header |
+| `FLOW_BEDROCK_MODEL_NAME` | No | `anthropic.claude-3-5-haiku` | Bedrock model ID |
+| `FLOW_BEDROCK_MAX_TOKENS` | No | `1000` | Maximum tokens to generate |
+| `FLOW_BEDROCK_TEMPERATURE` | No | `1.0` | Sampling temperature |
+| `FLOW_BEDROCK_TOP_P` | No | `0.999` | Top-p sampling |
+| `FLOW_BEDROCK_TOP_K` | No | `250` | Top-k sampling |
+| `FLOW_BEDROCK_ANTHROPIC_VERSION` | No | `bedrock-2023-05-31` | Anthropic API version for Bedrock |
+
+**.env example:**
+```env
+FLOW_BASE_URL=https://flow.ciandt.com
+FLOW_CLIENT_ID=my-client-id
+FLOW_CLIENT_SECRET=my-client-secret
+FLOW_TENANT=myteam
+FLOW_BEDROCK_MODEL_NAME=anthropic.claude-3-5-haiku
+FLOW_BEDROCK_MAX_TOKENS=1000
+```
+
+**Usage:**
+```bash
+python run_cli.py story.md --provider flow-bedrock
+```
+
+---
+
 ## Integration Options
 
 The BCP Calculator can be used in five different ways:
@@ -57,14 +173,25 @@ Run the BCP Calculator with a user story file:
 python run_cli.py path/to/user_story.md
 ```
 
+Or load the story from Trello (see [Story Input Sources](docs/usage/story_sources.md)):
+
+```
+python run_cli.py --source trello --id https://trello.com/c/abc123
+python run_cli.py --trello-board https://trello.com/b/shortLink --trello-list-name "Ready"
+```
+
 ### Options
 
+- `--source`: Story input source (`file` or `trello`). Default is `file`.
+- `--id`: Story identifier in the selected source (file path, Trello card URL, ...).
+- `--container` / `--container-type`: Collection to load (board, list, directory, ...).
 - `--log-level`: Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default is INFO.
 - `--output-file`: Path to save the output results. If not provided, results are printed to stdout.
 - `--provider`: LLM provider to use (openai, claude, flow-openai or flow-bedrock). Default is openai.
 - `--format`: Output format (text or json). Default is json.
 
 For more detailed CLI usage information, see the [CLI Usage Guide](docs/usage/cli_usage.md).
+To add Jira, Azure DevOps, or another tracker, see [Story Input Sources](docs/usage/story_sources.md).
 
 ## Output
 
@@ -127,6 +254,7 @@ The output includes:
   - `llm_providers.py`: Provider abstraction for different LLM services
   - `logger.py`: Custom logging functionality
   - `prompts/`: Directory containing the prompt templates
+  - `sources/`: Pluggable story input adapters (`file`, `trello`, ...)
 
 ### Testing and Utilities
 - `tests/test_bcp_calculator.py`: Unit tests for the calculator

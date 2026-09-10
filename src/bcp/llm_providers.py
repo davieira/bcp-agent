@@ -21,6 +21,16 @@ from pydantic import Field, model_validator
 import requests
 
 
+def _required_env(name: str) -> str:
+    """Read a required configuration value from the environment."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise ValueError(
+            f"{name} is not set. Add it to your .env file (see .env.example)."
+        )
+    return value
+
+
 class LLMProvider(ABC):
     """Base abstract class for LLM providers."""
     
@@ -63,19 +73,19 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI provider implementation."""
     
-    def __init__(self, logger: logging.Logger, model_name: str = "gpt-4o-2024-05-13", temperature: float = 0):
+    def __init__(self, logger: logging.Logger, model_name: Optional[str] = None, temperature: float = 0):
         """
         Initialize the OpenAI provider.
         
         Args:
             logger: The logger instance
-            model_name: The name of the OpenAI model to use
+            model_name: The name of the OpenAI model to use (defaults to OPENAI_MODEL_NAME)
             temperature: The temperature parameter for the model
         """
         super().__init__(logger)
-        self.model_name = model_name
+        self.model_name = model_name or _required_env("OPENAI_MODEL_NAME")
         self.temperature = temperature
-        self.logger.info(f"Initialized OpenAI provider with model {model_name}")
+        self.logger.info(f"Initialized OpenAI provider with model {self.model_name}")
     
     def get_model(self) -> BaseLanguageModel:
         """
@@ -90,19 +100,19 @@ class OpenAIProvider(LLMProvider):
 class ClaudeProvider(LLMProvider):
     """Anthropic Claude provider implementation."""
 
-    def __init__(self, logger: logging.Logger, model_name: str = "claude-3-sonnet-20240229-v1:0", temperature: float = 0):
+    def __init__(self, logger: logging.Logger, model_name: Optional[str] = None, temperature: float = 0):
         """
         Initialize the Claude provider.
 
         Args:
             logger: The logger instance
-            model_name: The name of the Claude model to use
+            model_name: The name of the Claude model to use (defaults to ANTHROPIC_MODEL_NAME)
             temperature: The temperature parameter for the model
         """
         super().__init__(logger)
-        self.model_name = model_name
+        self.model_name = model_name or _required_env("ANTHROPIC_MODEL_NAME")
         self.temperature = temperature
-        self.logger.info(f"Initialized Claude provider with model {model_name}")
+        self.logger.info(f"Initialized Claude provider with model {self.model_name}")
 
     def get_model(self) -> BaseLanguageModel:
         """
@@ -267,7 +277,7 @@ class FlowProvider(LLMProvider):
         headers = {
             "accept": "/",
             "Content-Type": "application/json",
-            "FlowTenant": "flowteam",
+            "FlowTenant": os.environ.get("FLOW_TENANT", "flowteam"),
         }
 
         payload = {
@@ -490,7 +500,7 @@ class FlowBedrockProvider(LLMProvider):
         headers = {
             "accept": "/",
             "Content-Type": "application/json",
-            "FlowTenant": "flowteam",
+            "FlowTenant": os.environ.get("FLOW_TENANT", "flowteam"),
         }
 
         payload = {
@@ -550,11 +560,9 @@ def get_provider(provider_name: str, logger: logging.Logger) -> LLMProvider:
     provider_name = provider_name.lower()
 
     if provider_name == "openai":
-        model_name = os.environ.get("OPENAI_MODEL_NAME", "gpt-4o-2024-05-13")
-        return OpenAIProvider(logger, model_name=model_name)
+        return OpenAIProvider(logger, model_name=_required_env("OPENAI_MODEL_NAME"))
     elif provider_name == "claude":
-        model_name = os.environ.get("ANTHROPIC_MODEL_NAME", "claude-3-sonnet-20240229-v1:0")
-        return ClaudeProvider(logger, model_name=model_name)
+        return ClaudeProvider(logger, model_name=_required_env("ANTHROPIC_MODEL_NAME"))
     elif provider_name == "flow-openai":
         model_name = os.environ.get("FLOW_MODEL_NAME", "gpt-4o-mini")
         max_tokens = int(os.environ.get("FLOW_MAX_TOKENS", "4096"))

@@ -23,10 +23,13 @@ The basic syntax for using the BCP Calculator CLI is:
 
 ```bash
 python run_cli.py <story_file> [OPTIONS]
+python run_cli.py --source trello --id <card-url> [OPTIONS]
 ```
 
 Where:
-- `<story_file>` is the path to the markdown file containing your user story
+- `<story_file>` is the path to the markdown file containing your user story (default source: `file`)
+
+Stories can also be loaded from a registered input source such as Trello. See [Story Input Sources](story_sources.md).
 
 ## Options
 
@@ -34,6 +37,18 @@ The CLI supports the following options:
 
 | Option | Description | Default |
 |--------|-------------|---------|
+| `--source` | Story input source (`file`, `trello`) | file |
+| `--id` | Story identifier in the selected source (file path, Trello card URL, ...) | None |
+| `--container` | Collection identifier (directory, board, list, ...) | None |
+| `--container-type` | Type of `--container` (`board`, `list`, `directory`, ...) | None |
+| `--filter KEY=VALUE` | Source-specific filter (repeatable) | None |
+| `--trello-list` | Trello list id (implies `--source trello`) | None |
+| `--trello-board` | Trello board id or URL (implies `--source trello`) | None |
+| `--trello-list-name` | Filter board cards by list name | None |
+| `--trello-label` | Filter Trello cards by label name | None |
+| `--trello-include-closed` | Include archived Trello cards | False |
+| `--trello-custom-fields` | Create/update Trello custom fields `BCP`, `Maturidade`, `INVEST` (Premium) | off (comment only) |
+| `--no-write-back` | Do not write BCP results back to Trello cards | write-back on (comment) |
 | `--log-level` | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) | INFO |
 | `--output-file` | Path to save the output results | None (print to stdout) |
 | `--provider` | LLM provider to use (openai or claude) | openai |
@@ -48,6 +63,17 @@ Process a user story with the default provider (OpenAI):
 ```bash
 python run_cli.py tests/data/story1.md
 ```
+
+### Trello
+
+```bash
+python run_cli.py --source trello --id https://trello.com/c/abc123
+python run_cli.py --trello-list LIST_ID --provider openai
+python run_cli.py --trello-board https://trello.com/b/shortLink --trello-list-name "Ready"
+python run_cli.py --trello-board https://trello.com/b/shortLink --trello-custom-fields
+```
+
+Trello credentials (`TRELLO_API_KEY` and `TRELLO_TOKEN`) must be set in `.env`.
 
 ### Using Different Providers
 
@@ -181,6 +207,7 @@ External Integrations: 5
 2. **File Path Errors**:
    - Use absolute paths if experiencing issues with relative paths
    - Ensure the story file exists and has the correct permissions
+   - For Trello, set `TRELLO_API_KEY` and `TRELLO_TOKEN` and pass a card, list, or board
 
 3. **Provider Issues**:
    - If a provider is not working, try switching to a different provider

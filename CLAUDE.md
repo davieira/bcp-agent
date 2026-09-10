@@ -16,6 +16,7 @@ The tool also provides functionality to compare results between different LLM pr
 - **src/bcp/prompt_handler.py**: Manages loading and processing prompt templates
 - **src/bcp/llm_providers.py**: Provider abstraction for different LLM services
 - **src/bcp/logger.py**: Custom logging functionality
+- **src/bcp/sources/**: Pluggable story input adapters (file, Trello; extend for Jira/Azure DevOps)
 - **src/bcp/prompts/**: Directory containing step1-step6 prompt templates
 - **tests/compare_providers.py**: Tool for comparing BCP results between different providers
 - **tests/data/**: Directory containing sample user stories for testing
@@ -42,6 +43,7 @@ The tool also provides functionality to compare results between different LLM pr
 ### Running the Application
 ```bash
 python main.py path/to/user_story.md --log-level DEBUG --output-file results.txt
+python main.py --source trello --id https://trello.com/c/abc123
 ```
 
 ### Running Provider Comparisons
@@ -71,6 +73,7 @@ The application includes test data in the `tests/data/` directory with sample us
 - Structured output parsing from LLM responses
 - Comprehensive logging for debugging and monitoring
 - File-based input/output for user stories and results
+- Pluggable story sources (`StorySource`) so Trello/Jira/Azure DevOps share one fetch contract
 
 ### Error Handling
 The application should handle:

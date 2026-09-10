@@ -6,5 +6,6 @@ This directory contains detailed usage guides for each integration option of the
 - [HTTP API](http_api_usage.md) - Run as a RESTful API service
 - [Model Context Protocol (MCP)](mcp_usage.md) - Use with Claude Code or any MCP client (stdio or streamable HTTP)
 - [Python SDK](sdk_usage.md) - Import and use as a Python library
+- [Story Input Sources](story_sources.md) - Load stories from files, Trello, or a custom adapter (Jira, Azure DevOps, ...)
 
 Choose the integration option that best fits your workflow and refer to the appropriate usage guide for detailed instructions.

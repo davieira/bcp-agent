@@ -59,7 +59,7 @@ Once started, the API server will be available at `http://host:port/`.
 
 - **URL**: `/calculate`
 - **Method**: `POST`
-- **Description**: Start a BCP calculation job
+- **Description**: Start a BCP calculation job from inline story content
 
 **Request Body**:
 ```json
@@ -79,6 +79,42 @@ Parameters:
   "job_id": "123e4567-e89b-12d3-a456-426614174000"
 }
 ```
+
+### List Story Sources
+
+- **URL**: `/sources`
+- **Method**: `GET`
+- **Description**: List registered story input adapters (`file`, `trello`, ...)
+
+### Calculate BCP from a Source
+
+- **URL**: `/calculate/source`
+- **Method**: `POST`
+- **Description**: Load one or more stories from a registered source and calculate BCP
+
+**Request Body** (single Trello card):
+```json
+{
+  "source": "trello",
+  "id": "https://trello.com/c/abc123",
+  "provider": "openai",
+  "write_back": true,
+  "write_custom_fields": false
+}
+```
+
+**Request Body** (Trello board):
+```json
+{
+  "source": "trello",
+  "container": "https://trello.com/b/shortLink",
+  "container_type": "board",
+  "filters": {"list_name": "Ready", "label": "Story"},
+  "provider": "openai"
+}
+```
+
+See [Story Input Sources](story_sources.md) for the generic `id` / `container` contract used by future adapters such as Jira.
 
 ### Get Job Status
 

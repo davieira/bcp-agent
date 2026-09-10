@@ -75,6 +75,31 @@ file_results = client.calculate_file("path/to/user_story.md")
 print(f"Total BCP: {file_results['total_bcp']}")
 ```
 
+### Calculate BCP from a Source (Trello, files, ...)
+
+```python
+# Single Trello card
+trello_result = client.calculate_from_source(
+    "trello",
+    item="https://trello.com/c/abc123",
+)
+
+# Optional: create/update BCP custom fields (Trello Premium)
+# client.calculate_from_source("trello", item="https://trello.com/c/abc123", write_custom_fields=True)
+
+# All open cards in a Trello list
+list_result = client.calculate_from_source(
+    "trello",
+    container="LIST_ID",
+    container_type="list",
+)
+
+# Future sources use the same method:
+# client.calculate_from_source("jira", item="PROJ-123")
+```
+
+See [Story Input Sources](story_sources.md) to add Jira, Azure DevOps, or another tracker.
+
 ## Advanced Usage
 
 ### Batch Processing
@@ -191,6 +216,21 @@ Calculate BCP for a user story file.
 - `file_path`: Path to the user story file
 - Returns: A dictionary containing the BCP calculation results
 - Raises: `FileNotFoundError` if the file does not exist
+
+##### calculate_from_source
+
+```python
+calculate_from_source(source: str, item: Optional[str] = None, container: Optional[str] = None, container_type: Optional[str] = None, filters: Optional[Dict[str, Any]] = None, **source_kwargs) -> Dict[str, Any]
+```
+
+Calculate BCP from a registered story source (`file`, `trello`, ...).
+
+- `source`: Source name
+- `item`: Single story identifier (file path, Trello card URL, issue key, ...)
+- `container`: Collection identifier (directory, board, list, project, ...)
+- `container_type`: Disambiguates `container` (`board`, `list`, `directory`, ...)
+- `filters`: Source-specific filters
+- Returns: Calculator results for one story, or a batch payload for many stories
 
 ##### batch_calculate
 
